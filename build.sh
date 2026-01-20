@@ -1,0 +1,1 @@
+docker buildx build --builder cloud-vanhansewijck-default --platform linux/arm64,linux/amd64 -t vanhansewijck/mock-oidc-provider:latest --push .

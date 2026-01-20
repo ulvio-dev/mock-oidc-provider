@@ -1,0 +1,9 @@
+node_modules
+dist
+data/data.json
+data/config.json
+data/logo.png
+data/settings.json
+*.log
+.env
+.DS_Store

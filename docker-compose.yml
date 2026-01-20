@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  mock-oidc-provider:
+    build: .
+    container_name: mock-oidc-provider
+    ports:
+      - "3000:3000"
+    environment:
+      # Optional: Set these for HTTP Basic Authentication
+      # WEB_USER: admin
+      # WEB_PASS: password
+
+      # Optional: Set base pathname for URL routing
+      # BASE_PATHNAME: /oidc
+
+      # Optional: Override the base URL (defaults to http://localhost:3000)
+      # BASE_URL: https://your-domain.com
+
+      PORT: 3000
+      NODE_ENV: production
+    volumes:
+      # Persist configuration data
+      - ./data:/app/data
+    restart: unless-stopped
