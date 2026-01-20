@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.gitignore
+*.md
+.env
+data/data.json
+data/config.json
+data/logo.png
+old
+implementation.md
