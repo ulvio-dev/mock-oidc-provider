@@ -9,3 +9,5 @@ data/config.json
 data/logo.png
 old
 implementation.md
+docker-compose.yml
+Dockerfile

@@ -7,18 +7,28 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Optional: Set these for HTTP Basic Authentication
+      # Server configuration
+      PORT: 3000
+      NODE_ENV: production
+
+      # Optional: HTTP Basic Authentication
       # WEB_USER: admin
       # WEB_PASS: password
 
-      # Optional: Set base pathname for URL routing
+      # Optional: URL routing configuration
       # BASE_PATHNAME: /oidc
-
-      # Optional: Override the base URL (defaults to http://localhost:3000)
       # BASE_URL: https://your-domain.com
 
-      PORT: 3000
-      NODE_ENV: production
+      # OAuth Client Configuration (Required)
+      # Option 1: Set directly (not recommended for secrets)
+      # MOCK_CLIENT_ID: "your-client-id"
+      # MOCK_CLIENT_SECRET: "your-client-secret"
+      # MOCK_REDIRECT_URI: "http://localhost:4200/api/auth/callback"
+
+      # Option 2: Reference from .env file (recommended)
+      MOCK_CLIENT_ID: "${MOCK_CLIENT_ID}"
+      MOCK_CLIENT_SECRET: "${MOCK_CLIENT_SECRET}"
+      MOCK_REDIRECT_URI: "${MOCK_REDIRECT_URI}"
     volumes:
       # Persist configuration data
       - ./data:/app/data

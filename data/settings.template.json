@@ -1,0 +1,14 @@
+{
+  "client": {
+    "clientId": "your-client-id",
+    "clientSecret": "your-client-secret",
+    "redirectUri": "http://localhost:4200/api/auth/callback"
+  },
+  "edgeCases": {
+    "invalidRedirectUri": false,
+    "invalidScope": false,
+    "invalidClient": false,
+    "expiredToken": false,
+    "missingClaims": false
+  }
+}
