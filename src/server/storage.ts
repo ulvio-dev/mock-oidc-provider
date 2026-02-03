@@ -63,44 +63,112 @@ export function hasLogo(): boolean {
   return fs.existsSync(LOGO_FILE) || fs.existsSync(DEFAULT_LOGO_FILE);
 }
 
+/**
+ * Redacts sensitive values for logging
+ */
+function redactSecret(value: string | undefined): string {
+  if (!value) return '(empty)';
+  if (value.length <= 4) return '***';
+  return `${value.substring(0, 2)}***${value.substring(value.length - 2)}`;
+}
+
+/**
+ * Loads settings with environment variable override support
+ *
+ * Priority order:
+ * 1. Environment variables (highest priority)
+ * 2. settings.json file (fallback)
+ * 3. Default values (empty strings)
+ *
+ * Environment variables:
+ * - MOCK_CLIENT_ID: Override client.clientId
+ * - MOCK_CLIENT_SECRET: Override client.clientSecret
+ * - MOCK_REDIRECT_URI: Override client.redirectUri
+ */
 export function loadSettings(): SettingsFile {
+  let fileSettings: SettingsFile | null = null;
+
+  // Load from file if it exists
   try {
-    if (!fs.existsSync(SETTINGS_FILE)) {
-      // Return defaults
-      return {
-        client: {
-          clientId: '',
-          clientSecret: '',
-          redirectUri: ''
-        },
-        edgeCases: {
-          invalidRedirectUri: false,
-          invalidScope: false,
-          invalidClient: false,
-          expiredToken: false,
-          missingClaims: false
-        }
-      };
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const content = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+      fileSettings = JSON.parse(content);
     }
-    const content = fs.readFileSync(SETTINGS_FILE, 'utf-8');
-    return JSON.parse(content);
   } catch (error) {
     console.error('Error loading settings.json:', error);
-    return {
-      client: {
-        clientId: '',
-        clientSecret: '',
-        redirectUri: ''
-      },
-      edgeCases: {
-        invalidRedirectUri: false,
-        invalidScope: false,
-        invalidClient: false,
-        expiredToken: false,
-        missingClaims: false
-      }
-    };
   }
+
+  // Default edge cases
+  const defaultEdgeCases = {
+    invalidRedirectUri: false,
+    invalidScope: false,
+    invalidClient: false,
+    expiredToken: false,
+    missingClaims: false
+  };
+
+  // Merge settings with environment variable overrides
+  const clientId = process.env.MOCK_CLIENT_ID || fileSettings?.client?.clientId || '';
+  const clientSecret = process.env.MOCK_CLIENT_SECRET || fileSettings?.client?.clientSecret || '';
+  const redirectUri = process.env.MOCK_REDIRECT_URI || fileSettings?.client?.redirectUri || '';
+
+  const settings: SettingsFile = {
+    client: {
+      clientId,
+      clientSecret,
+      redirectUri
+    },
+    edgeCases: fileSettings?.edgeCases || defaultEdgeCases
+  };
+
+  // Validation: Fail fast if required values are missing
+  if (!settings.client.clientSecret) {
+    throw new Error(
+      'Client secret is required. Set MOCK_CLIENT_SECRET environment variable or provide client.clientSecret in settings.json'
+    );
+  }
+
+  if (!settings.client.clientId) {
+    throw new Error(
+      'Client ID is required. Set MOCK_CLIENT_ID environment variable or provide client.clientId in settings.json'
+    );
+  }
+
+  if (!settings.client.redirectUri) {
+    throw new Error(
+      'Redirect URI is required. Set MOCK_REDIRECT_URI environment variable or provide client.redirectUri in settings.json'
+    );
+  }
+
+  // Log configuration source (with secret redaction)
+  const usingEnvVars = !!(process.env.MOCK_CLIENT_ID || process.env.MOCK_CLIENT_SECRET || process.env.MOCK_REDIRECT_URI);
+  const usingFileConfig = !!fileSettings;
+
+  if (usingEnvVars) {
+    console.log('✓ Using environment variable overrides for OAuth client configuration');
+    if (process.env.MOCK_CLIENT_ID) {
+      console.log(`  - MOCK_CLIENT_ID: ${settings.client.clientId}`);
+    }
+    if (process.env.MOCK_CLIENT_SECRET) {
+      console.log(`  - MOCK_CLIENT_SECRET: ${redactSecret(settings.client.clientSecret)}`);
+    }
+    if (process.env.MOCK_REDIRECT_URI) {
+      console.log(`  - MOCK_REDIRECT_URI: ${settings.client.redirectUri}`);
+    }
+  }
+
+  if (usingFileConfig && fileSettings?.client?.clientSecret) {
+    console.warn('⚠️  Warning: Loading clientSecret from settings.json file');
+    console.warn('   For better security, use MOCK_CLIENT_SECRET environment variable instead');
+  }
+
+  // Log final configuration (with secret redaction)
+  console.log('OAuth Client Configuration:');
+  console.log(`  - Client ID: ${settings.client.clientId}`);
+  console.log(`  - Client Secret: ${redactSecret(settings.client.clientSecret)}`);
+  console.log(`  - Redirect URI: ${settings.client.redirectUri}`);
+
+  return settings;
 }
 
 export function saveSettings(settings: SettingsFile): void {

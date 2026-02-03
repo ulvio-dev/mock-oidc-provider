@@ -357,7 +357,7 @@ app.post(`${basePathname}/token`, (req, res) => {
 });
 
 // Catch-all: serve React app for all other routes
-app.get(`${basePathname}/*`, (req, res) => {
+app.get(`${basePathname}{/*path}`, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
