@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import multer from 'multer';
+import fs from 'fs';
 import { basicAuthMiddleware } from './auth.js';
 import { OIDCProvider } from './oidc.js';
 import * as storage from './storage.js';
@@ -27,8 +28,8 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-// Serve static files (React app)
-app.use(`${basePathname}/`, express.static(path.join(__dirname, 'public')));
+// Serve static files (React app) - exclude index.html to handle it separately
+app.use(`${basePathname}/`, express.static(path.join(__dirname, 'public'), { index: false }));
 
 // Serve logo
 app.get(`${basePathname}/api/logo`, (req, res) => {
@@ -356,10 +357,29 @@ app.post(`${basePathname}/token`, (req, res) => {
   res.json(tokens);
 });
 
-// Catch-all: serve React app for all other routes
-app.get(`${basePathname}{/*path}`, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// Serve index.html with base pathname injected
+const serveIndexHtml = (req: express.Request, res: express.Response) => {
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  let html = fs.readFileSync(indexPath, 'utf-8');
+
+  // Replace placeholder with actual base pathname (use string literal for JS)
+  html = html.replace(/window\.__BASE_PATHNAME__ = '__BASE_PATHNAME__';/g,
+    `window.__BASE_PATHNAME__ = '${basePathname || ''}';`);
+
+  // If we have a base pathname, rewrite all asset paths to include it
+  if (basePathname) {
+    // Rewrite script src attributes
+    html = html.replace(/src="\/([^"]+)"/g, `src="${basePathname}/$1"`);
+    // Rewrite link href attributes for stylesheets
+    html = html.replace(/href="\/([^"]+\.css)"/g, `href="${basePathname}/$1"`);
+  }
+
+  res.setHeader('Content-Type', 'text/html');
+  res.send(html);
+};
+
+// Serve index.html for the root and any SPA routes (simple fallback for unmatched routes)
+app.get(basePathname || '/', serveIndexHtml);
 
 app.listen(PORT, () => {
   console.log(`\n🚀 Mock OIDC Provider`);

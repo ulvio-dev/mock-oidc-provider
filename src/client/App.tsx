@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import InstallerPage from './pages/InstallerPage';
 import DashboardPage from './pages/DashboardPage';
 import AuthorizePage from './pages/AuthorizePage';
+import { createUrl } from './utils';
 
 interface Status {
   installed: boolean;
@@ -13,7 +14,7 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/status')
+    fetch(createUrl('/api/status'))
       .then(res => res.json())
       .then(data => {
         setStatus(data);

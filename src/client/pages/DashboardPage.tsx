@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createUrl, getBasePathname } from '../utils';
 
 interface Config {
   title: string;
@@ -40,9 +41,9 @@ function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/config').then(res => res.json()),
-      fetch('/api/identities').then(res => res.json()),
-      fetch('/api/settings').then(res => res.json()),
+      fetch(createUrl('/api/config')).then(res => res.json()),
+      fetch(createUrl('/api/identities')).then(res => res.json()),
+      fetch(createUrl('/api/settings')).then(res => res.json()),
     ])
       .then(([configData, identitiesData, settingsData]) => {
         setConfig(configData);
@@ -63,7 +64,7 @@ function DashboardPage() {
     setSaveMessage('');
 
     try {
-      const response = await fetch('/api/settings', {
+      const response = await fetch(createUrl('/api/settings'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
@@ -94,7 +95,8 @@ function DashboardPage() {
     );
   }
 
-  const baseUrl = window.location.origin + window.location.pathname.replace(/\/$/, '');
+  const basePathname = getBasePathname();
+  const baseUrl = window.location.origin + basePathname;
   const accentColor = config?.accentColor || '#3B82F6';
 
   return (
@@ -103,7 +105,7 @@ function DashboardPage() {
         {/* Header */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <div className="flex items-center gap-4">
-            <img src="/api/logo" alt="Logo" className="h-12 w-12 object-contain" />
+            <img src={createUrl('/api/logo')} alt="Logo" className="h-12 w-12 object-contain" />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
                 {config?.title || 'Mock OIDC Provider'}

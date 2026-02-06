@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createUrl } from '../utils';
 
 interface InstallerPageProps {
   onInstalled: () => void;
@@ -147,7 +148,7 @@ function InstallerPage({ onInstalled }: InstallerPageProps) {
         formData.append('logo', logoFile);
       }
 
-      const response = await fetch('/api/install', {
+      const response = await fetch(createUrl('/api/install'), {
         method: 'POST',
         body: formData,
       });

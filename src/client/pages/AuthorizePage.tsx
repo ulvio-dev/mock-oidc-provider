@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createUrl } from '../utils';
 
 interface Identity {
   name: string;
@@ -24,8 +25,8 @@ function AuthorizePage({ authId }: AuthorizePageProps) {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/config').then(res => res.json()),
-      fetch('/api/identities').then(res => res.json()),
+      fetch(createUrl('/api/config')).then(res => res.json()),
+      fetch(createUrl('/api/identities')).then(res => res.json()),
     ])
       .then(([configData, identitiesData]) => {
         setConfig(configData);
@@ -44,7 +45,7 @@ function AuthorizePage({ authId }: AuthorizePageProps) {
     setError('');
 
     try {
-      const response = await fetch('/api/authorize/select', {
+      const response = await fetch(createUrl('/api/authorize/select'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ authId, identityName }),
@@ -82,7 +83,7 @@ function AuthorizePage({ authId }: AuthorizePageProps) {
         {/* Header Card */}
         <div className="bg-white rounded-xl shadow-md p-6 mb-6">
           <div className="flex items-center gap-4">
-            <img src="/api/logo" alt="Logo" className="h-12 w-12 object-contain" />
+            <img src={createUrl('/api/logo')} alt="Logo" className="h-12 w-12 object-contain" />
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <h1 className="text-2xl font-bold text-gray-900">
