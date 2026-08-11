@@ -58,5 +58,10 @@ ENV NODE_ENV=production
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD ["node", "-e", "fetch('http://localhost:3000/api/status').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
 
-# Start the server
+# Node handles SIGTERM itself (see the shutdown handler in src/server/server.ts),
+# so the container stops cleanly instead of being SIGKILLed at the stop timeout.
+STOPSIGNAL SIGTERM
+
+# Start the server. Exec form (no shell) so node runs as PID 1 and receives
+# signals directly - the hardened base image has no shell to forward them.
 CMD ["node", "dist/server.js"]

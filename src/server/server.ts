@@ -381,9 +381,45 @@ const serveIndexHtml = (req: express.Request, res: express.Response) => {
 // Serve index.html for the root and any SPA routes (simple fallback for unmatched routes)
 app.get(basePathname || '/', serveIndexHtml);
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n🚀 Mock OIDC Provider`);
   console.log(`📍 Server running at: http://localhost:${PORT}${basePathname}`);
   console.log(`🔍 Discovery: http://localhost:${PORT}${basePathname}/.well-known/openid-configuration`);
   console.log(`📦 Installation status: ${storage.isInstalled() ? 'Configured' : 'Needs setup'}\n`);
 });
+
+// Graceful shutdown: stop accepting new connections, let in-flight requests
+// finish, then exit. Without this the process runs as PID 1 with no SIGTERM
+// handler and Docker has to SIGKILL it after the stop timeout.
+const SHUTDOWN_TIMEOUT = Number(process.env.SHUTDOWN_TIMEOUT_MS) || 10000;
+
+let shuttingDown = false;
+
+function shutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  console.log(`\n${signal} received, shutting down gracefully...`);
+
+  // Force exit if the server does not close in time
+  const forceExit = setTimeout(() => {
+    console.error('Shutdown timed out, forcing exit');
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT);
+  forceExit.unref();
+
+  server.close((err) => {
+    if (err) {
+      console.error('Error during shutdown:', err);
+      process.exit(1);
+    }
+    console.log('Server closed, exiting');
+    process.exit(0);
+  });
+
+  // Idle keep-alive sockets would otherwise hold the server open
+  server.closeIdleConnections?.();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
