@@ -7,6 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  DHI_REGISTRY: dhi.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
@@ -29,7 +30,14 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-    
+
+      - name: Log in to Docker Hardened Images registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.DHI_REGISTRY }}
+          username: ${{ secrets.DHI_USERNAME }}
+          password: ${{ secrets.DHI_TOKEN }}
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7

@@ -157,6 +157,16 @@ op run --env-file=.env.template -- docker-compose up -d
 
 All configuration files are stored in the `data` directory and mounted as a Docker volume.
 
+> **Note:** The Docker image is built on [Docker Hardened Images](https://docs.docker.com/dhi/) and runs as
+> the non-root `node` user (uid/gid 1000). When bind-mounting `./data`, make sure the host directory is
+> writable by uid 1000, otherwise the app cannot persist its configuration:
+>
+> ```bash
+> sudo chown -R 1000:1000 ./data
+> ```
+>
+> Named Docker volumes inherit the correct ownership automatically and need no extra step.
+
 ### Settings File Format (settings.json)
 
 OAuth client configuration - can be overridden by environment variables:

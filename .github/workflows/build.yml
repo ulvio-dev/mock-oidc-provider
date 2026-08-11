@@ -8,6 +8,9 @@ on:
     branches:
       - '**'
 
+env:
+  DHI_REGISTRY: dhi.io
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,6 +21,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Log in to Docker Hardened Images registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.DHI_REGISTRY }}
+          username: ${{ secrets.DHI_USERNAME }}
+          password: ${{ secrets.DHI_TOKEN }}
 
       - name: Build Docker image
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4

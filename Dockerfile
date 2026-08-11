@@ -1,5 +1,5 @@
 # Build stage
-FROM node:24 AS builder
+FROM dhi.io/node:24-sfw-dev AS builder
 
 WORKDIR /app
 
@@ -18,29 +18,45 @@ COPY src/ ./src/
 # Build the application
 RUN npm run build
 
-# Production stage
-FROM node:24
+# Production dependencies stage
+FROM dhi.io/node:24-sfw-dev AS deps
 
 WORKDIR /app
 
-# Install production dependencies only
 COPY package*.json ./
-RUN npm ci --production && npm cache clean --force
+
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Pre-create the data directory owned by the runtime user, since the
+# runtime image has no shell to mkdir/chown in.
+RUN mkdir -p /app/data && chown -R node:node /app/data
+
+# Production stage
+FROM dhi.io/node:24
+LABEL org.opencontainers.image.source=https://github.com/ulvio-dev/mock-oidc-provider
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps --chown=node:node /app/data ./data
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
+COPY package.json ./package.json
 
 # Copy default logo
-COPY data/logo-ulvio-revert.png ./data/logo-ulvio-revert.png
+COPY --chown=node:node data/logo-ulvio-revert.png ./data/logo-ulvio-revert.png
 
-# Create data directory for persistence
-RUN mkdir -p /app/data
+USER node
 
 # Expose port
 EXPOSE 3000
 
 # Set environment variables
 ENV NODE_ENV=production
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD ["node", "-e", "fetch('http://localhost:3000/api/status').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
 
 # Start the server
 CMD ["node", "dist/server.js"]
