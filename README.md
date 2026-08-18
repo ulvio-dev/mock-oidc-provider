@@ -157,6 +157,33 @@ op run --env-file=.env.template -- docker-compose up -d
 
 All configuration files are stored in the `data` directory and mounted as a Docker volume.
 
+> **Note:** The Docker image is built on [Docker Hardened Images](https://docs.docker.com/dhi/) and runs as
+> the non-root `node` user (uid/gid 1000). When bind-mounting `./data`, make sure the host directory is
+> writable by uid 1000, otherwise the app cannot persist its configuration:
+>
+> ```bash
+> sudo chown -R 1000:1000 ./data
+> ```
+>
+> Named Docker volumes inherit the correct ownership automatically and need no extra step.
+
+## Graceful Shutdown
+
+On `SIGTERM` or `SIGINT` the server stops accepting new connections, lets in-flight requests finish,
+and then exits with code 0. `docker stop` therefore completes in well under a second instead of
+hanging until the grace period expires and the container is `SIGKILL`ed.
+
+If the server has not closed within 10 seconds it forces an exit. Override that with
+`SHUTDOWN_TIMEOUT_MS`:
+
+```yaml
+environment:
+    SHUTDOWN_TIMEOUT_MS: 30000
+```
+
+Keep the container's `stop_grace_period` (or `docker stop --timeout`) longer than
+`SHUTDOWN_TIMEOUT_MS` so the app finishes on its own terms rather than being killed.
+
 ### Settings File Format (settings.json)
 
 OAuth client configuration - can be overridden by environment variables:

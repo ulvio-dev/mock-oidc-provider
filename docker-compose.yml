@@ -33,3 +33,7 @@ services:
       # Persist configuration data
       - ./data:/app/data
     restart: unless-stopped
+    # Reap zombies and forward signals (the hardened image ships no init)
+    init: true
+    # Allow in-flight requests to finish before Docker resorts to SIGKILL
+    stop_grace_period: 30s
