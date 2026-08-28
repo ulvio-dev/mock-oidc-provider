@@ -55,8 +55,11 @@ EXPOSE 3000
 # Set environment variables
 ENV NODE_ENV=production
 
+# Probe the port and base path the server actually listens on - both are
+# configurable via env, so a hardcoded http://localhost:3000/api/status reports
+# unhealthy on every deployment that overrides PORT or BASE_PATHNAME.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD ["node", "-e", "fetch('http://localhost:3000/api/status').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+  CMD ["node", "-e", "const p=process.env.PORT||3000;let b=process.env.BASE_PATHNAME||'';if(b.endsWith('/'))b=b.slice(0,-1);fetch('http://127.0.0.1:'+p+b+'/api/status').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
 
 # Node handles SIGTERM itself (see the shutdown handler in src/server/server.ts),
 # so the container stops cleanly instead of being SIGKILLed at the stop timeout.
